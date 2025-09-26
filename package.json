@@ -1,0 +1,74 @@
+{
+  "name": "your-cli",
+  "version": "1.0.0",
+  "description": "A TypeScript CLI project with Clean Architecture",
+  "type": "module",
+  "main": "dist/index.mjs",
+  "bin": {
+    "null-null-job": "dist/index.mjs"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "dev": "tsx src/interface/cli/index.ts",
+    "build": "tsup",
+    "lint": "eslint . --config eslint.config.ts",
+    "lint:fix": "eslint . --config eslint.config.ts --fix",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky install",
+    "pre-commit": "lint-staged",
+    "pre-push": "pnpm test:run"
+  },
+  "author": "Yury S. Glushkov",
+  "license": "MIT",
+  "dependencies": {
+    "@clack/prompts": "^0.8.0",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "effect": "^3.12.0",
+    "execa": "^9.4.0",
+    "ora": "^8.1.1",
+    "playwright": "^1.49.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.55.1",
+    "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.1",
+    "@typescript-eslint/parser": "^8.18.1",
+    "@vitest/coverage-v8": "^3.2.0",
+    "c8": "^8.0.1",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "4.4.4",
+    "eslint-plugin-functional": "^6.0.2",
+    "eslint-plugin-import": "^2.32.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "only-allow": "^1.2.1",
+    "prettier": "^3.4.2",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --config eslint.config.ts --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "files": [
+    "dist"
+  ]
+}

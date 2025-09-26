@@ -1,0 +1,16 @@
+# VS Code workspace-specific files (exclude from git)
+workspaceStorage/
+globalStorage/
+logs/
+CachedData/
+User/
+*.code-workspace
+
+# VS Code extensions
+extensions/
+
+# VS Code settings that are user-specific
+settings.json
+keybindings.json
+tasks.json
+launch.json

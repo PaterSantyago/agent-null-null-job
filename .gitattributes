@@ -1,0 +1,4 @@
+# Generated files (exclude from language stats)
+dist/* linguist-generated
+coverage/* linguist-generated
+*.d.ts linguist-generated
