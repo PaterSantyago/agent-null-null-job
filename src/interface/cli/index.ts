@@ -16,6 +16,142 @@ import { createTelegramService } from "@/infrastructure/adapters/telegram/telegr
 
 import { logger } from "./ui/index.js";
 
+// Helper function to format errors in a user-friendly way
+const formatError = (error: unknown): string => {
+  // Handle Effect FiberFailure errors
+  if (error && typeof error === "object") {
+    // Check if it's a FiberFailure by looking for the symbol
+    const symbolKeys = Object.getOwnPropertySymbols(error);
+    const isFiberFailure = symbolKeys.some((key) => key.toString().includes("FiberFailure"));
+
+    if (isFiberFailure) {
+      // Try to extract the cause from the symbol
+      const causeSymbol = symbolKeys.find((key) => key.toString().includes("Cause"));
+      if (causeSymbol) {
+        const cause = (error as Record<symbol, unknown>)[causeSymbol];
+        if (cause) {
+          // Check if it's a Fail object with an error property
+          if (cause && typeof cause === "object" && "error" in cause && cause.error !== undefined) {
+            return formatError(cause.error);
+          }
+          // If it's already a ConfigError, process it directly
+          if (
+            cause &&
+            typeof cause === "object" &&
+            "_tag" in cause &&
+            (cause as { _tag: string })._tag === "ConfigError"
+          ) {
+            return formatError(cause);
+          }
+          return formatError(cause);
+        }
+      }
+
+      // If no cause symbol, try to parse the message
+      const errorWithMessage = error as { message?: string };
+      if (errorWithMessage.message) {
+        try {
+          const parsedError = JSON.parse(errorWithMessage.message) as unknown;
+          if (parsedError && typeof parsedError === "object" && "_tag" in parsedError) {
+            return formatError(parsedError);
+          }
+        } catch {
+          // Not JSON, continue with regular error handling
+        }
+      }
+    }
+
+    // Check for regular cause property
+    if ("cause" in error) {
+      const fiberFailure = error as { cause?: unknown };
+      if (fiberFailure.cause) {
+        return formatError(fiberFailure.cause);
+      }
+    }
+  }
+
+  // Handle Effect errors that might be wrapped
+  if (error && typeof error === "object" && "_tag" in error) {
+    const baseError = error as { _tag: string; type: string; message: string; cause?: unknown };
+
+    switch (baseError._tag) {
+      case "Fail": {
+        // Handle Effect Fail objects that contain the actual error in the failure property
+        const failObject = error as { failure?: unknown };
+        if (failObject.failure) {
+          return formatError(failObject.failure);
+        }
+        return `❌ Fail: ${baseError.message || "Unknown failure"}`;
+      }
+      case "ConfigError":
+        switch (baseError.type) {
+          case "MISSING_ENV_VAR":
+            return `❌ Configuration Error: Missing required environment variable\n   ${baseError.message}\n\n   Please set the required environment variables and try again.`;
+          case "FILE_NOT_FOUND":
+            return `❌ Configuration Error: Configuration file not found\n   ${baseError.message}\n\n   Please create a config.json file or set the CONFIG_PATH environment variable.`;
+          case "INVALID_CONFIG":
+            return `❌ Configuration Error: Invalid configuration\n   ${baseError.message}\n\n   Please check your configuration file and try again.`;
+          case "PARSE_ERROR":
+            // Check if it's actually a missing environment variable error
+            if (baseError.message.includes("Missing required environment variable")) {
+              return `❌ Configuration Error: Missing required environment variable\n   ${baseError.message}\n\n   Please set the required environment variables and try again.`;
+            }
+            return `❌ Configuration Error: Failed to parse configuration\n   ${baseError.message}\n\n   Please check your configuration file format and try again.`;
+          default:
+            return `❌ Configuration Error: ${baseError.message}`;
+        }
+      case "AuthenticateError":
+        switch (baseError.type) {
+          case "AUTH_FAILED":
+            return `❌ Authentication Failed: ${baseError.message}\n\n   Please check your LinkedIn credentials and try again.`;
+          case "SESSION_EXPIRED":
+            return `❌ Session Expired: ${baseError.message}\n\n   Please re-authenticate using the --force flag.`;
+          case "USER_CANCELLED":
+            return `❌ Authentication Cancelled: ${baseError.message}\n\n   Authentication was cancelled by the user.`;
+          default:
+            return `❌ Authentication Error: ${baseError.message}`;
+        }
+      case "ScrapingError":
+        return `❌ Scraping Error: ${baseError.message}\n\n   There was an issue accessing LinkedIn. Please try again later.`;
+      case "LLMError":
+        return `❌ AI Service Error: ${baseError.message}\n\n   There was an issue with the AI service. Please check your API key and try again.`;
+      case "StorageError":
+        return `❌ Storage Error: ${baseError.message}\n\n   There was an issue accessing the database. Please try again.`;
+      case "TelegramError":
+        return `❌ Notification Error: ${baseError.message}\n\n   There was an issue sending notifications. Please check your Telegram configuration.`;
+      default:
+        return `❌ ${baseError._tag}: ${baseError.message}`;
+    }
+  }
+
+  // Handle stringified JSON errors (including in Error messages)
+  if (typeof error === "string") {
+    try {
+      const parsedError = JSON.parse(error) as unknown;
+      if (parsedError && typeof parsedError === "object" && "_tag" in parsedError) {
+        return formatError(parsedError);
+      }
+    } catch {
+      // Not JSON, continue with string handling
+    }
+  }
+
+  // Handle Error objects that might contain JSON in their message
+  if (error instanceof Error) {
+    try {
+      const parsedError = JSON.parse(error.message) as unknown;
+      if (parsedError && typeof parsedError === "object" && "_tag" in parsedError) {
+        return formatError(parsedError);
+      }
+    } catch {
+      // Not JSON, continue with regular error handling
+    }
+    return `❌ Error: ${error.message}`;
+  }
+
+  return `❌ Unknown Error: ${error instanceof Error ? error.message : String(error)}`;
+};
+
 // Singleton instance management
 const LOCK_FILE = resolve(process.cwd(), ".agent-null-null-job.lock");
 const PID_FILE = resolve(process.cwd(), ".agent-null-null-job.pid");
@@ -164,12 +300,12 @@ program
   .option("-d, --dry-run", "Run without making changes")
   .option("-f, --force", "Force re-authentication")
   .option("--purge", "Purge all data before running")
-  .action(async (options) => {
+  .action(async (options: Record<string, unknown>) => {
     await runAgent({
-      criteria: options["criteria"] ?? "default",
-      dryRun: options["dryRun"] ?? false,
-      force: options["force"] ?? false,
-      purge: options["purge"] ?? false,
+      criteria: (options["criteria"] as string) ?? "default",
+      dryRun: (options["dryRun"] as boolean) ?? false,
+      force: (options["force"] as boolean) ?? false,
+      purge: (options["purge"] as boolean) ?? false,
     });
   });
 
@@ -208,9 +344,9 @@ const runAgent = async (options: {
   s.start("Loading configuration...");
 
   const configEffect = loadConfig();
-  const config = await Effect.runPromise(configEffect).catch((error: Error) => {
+  const config = await Effect.runPromise(configEffect).catch((error: unknown) => {
     s.stop();
-    outro(`Configuration error: ${error.message}`);
+    outro(formatError(error));
     instanceManager.releaseLock();
     process.exit(10);
   });
@@ -218,7 +354,9 @@ const runAgent = async (options: {
   const criteria = config.criteria.find((c) => c.id === options.criteria);
   if (!criteria) {
     s.stop();
-    outro(`Criteria '${options.criteria}' not found`);
+    outro(
+      `❌ Configuration Error: Criteria '${options.criteria}' not found\n\n   Please check your configuration file and ensure the criteria ID exists.`,
+    );
     instanceManager.releaseLock();
     process.exit(1);
   }
@@ -237,9 +375,9 @@ const runAgent = async (options: {
   if (options.purge) {
     s.message("Purging all data...");
     const purgeEffect = nullNullJob.purgeCache("all");
-    await Effect.runPromise(purgeEffect).catch((error: Error) => {
+    await Effect.runPromise(purgeEffect).catch((error: unknown) => {
       s.stop();
-      outro(`Failed to purge data: ${error.message}`);
+      outro(formatError(error));
       instanceManager.releaseLock();
       process.exit(1);
     });
@@ -248,9 +386,9 @@ const runAgent = async (options: {
   // Authenticate if needed
   s.message("Checking authentication...");
   const authEffect = nullNullJob.authenticate(options.force);
-  await Effect.runPromise(authEffect).catch((error: Error) => {
+  await Effect.runPromise(authEffect).catch((error: unknown) => {
     s.stop();
-    outro(`Authentication failed: ${error.message}`);
+    outro(formatError(error));
     instanceManager.releaseLock();
     process.exit(10);
   });
@@ -265,9 +403,9 @@ const runAgent = async (options: {
         `Job discovery completed! Found ${run.jobsFound} jobs, processed ${run.jobsProcessed}, scored ${run.jobsScored}`,
       );
     },
-    (error: Error) => {
+    (error: unknown) => {
       s.stop();
-      outro(`Job discovery failed: ${error.message}`);
+      outro(formatError(error));
       instanceManager.releaseLock();
       process.exit(1);
     },
@@ -296,9 +434,9 @@ program
     s.start("Purging all data...");
 
     const configEffect = loadConfig();
-    const config = await Effect.runPromise(configEffect).catch((error: Error) => {
+    const config = await Effect.runPromise(configEffect).catch((error: unknown) => {
       s.stop();
-      outro(`Configuration error: ${error.message}`);
+      outro(formatError(error));
       instanceManager.releaseLock();
       process.exit(10);
     });
@@ -322,9 +460,9 @@ program
         s.stop();
         outro("All data purged successfully!");
       },
-      (error: Error) => {
+      (error: unknown) => {
         s.stop();
-        outro(`Failed to purge: ${error.message}`);
+        outro(formatError(error));
         instanceManager.releaseLock();
         process.exit(1);
       },
@@ -342,10 +480,12 @@ try {
     error.code === "commander.unknownCommand"
   ) {
     const errorWithMessage = error as { message?: string };
-    logger.error(`Unknown command: ${errorWithMessage.message ?? "Unknown error"}`);
+    outro(
+      `❌ Unknown Command: ${errorWithMessage.message ?? "Unknown error"}\n\n   Use --help to see available commands and options.`,
+    );
     process.exit(1);
   } else {
-    logger.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    outro(formatError(error));
     process.exit(1);
   }
 }
