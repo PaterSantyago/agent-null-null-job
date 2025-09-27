@@ -61,6 +61,8 @@ describe("scoreJobs use case", () => {
     gaps: score < 70 ? ["Missing some skills"] : [],
     cvVersion: "1.0",
     scoredAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
   });
 
   it("should score jobs and return those above minimum score", async () => {
@@ -92,8 +94,8 @@ describe("scoreJobs use case", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0].id.value).toBe("job-1");
-    expect(result[0].score).toBe(85);
+    expect(result[0]!.id.value).toBe("job-1");
+    expect(result[0]!.score).toBe(85);
     expect(mockLLMService.scoreJob).toHaveBeenCalledTimes(2);
     expect(mockStorage.saveJobScore).toHaveBeenCalledTimes(2);
   });
@@ -118,7 +120,7 @@ describe("scoreJobs use case", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0].score).toBe(90);
+    expect(result[0]!.score).toBe(90);
     expect(mockLLMService.scoreJob).not.toHaveBeenCalled();
     expect(mockStorage.saveJobScore).not.toHaveBeenCalled();
   });
@@ -152,7 +154,7 @@ describe("scoreJobs use case", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0].id.value).toBe("job-1");
+    expect(result[0]!.id.value).toBe("job-1");
     expect(mockLLMService.prefilterJob).toHaveBeenCalledTimes(2);
     expect(mockLLMService.scoreJob).toHaveBeenCalledTimes(1);
   });
@@ -180,7 +182,7 @@ describe("scoreJobs use case", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0].id.value).toBe("job-1");
+    expect(result[0]!.id.value).toBe("job-1");
   });
 
   it("should handle storage error when getting existing scores", async () => {
@@ -312,7 +314,7 @@ describe("scoreJobs use case", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0].id.value).toBe("job-1");
-    expect(result[0].score).toBe(85);
+    expect(result[0]!.id.value).toBe("job-1");
+    expect(result[0]!.score).toBe(85);
   });
 });

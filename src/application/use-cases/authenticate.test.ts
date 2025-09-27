@@ -43,6 +43,7 @@ describe("authenticate use case", () => {
       userAgent: "Mozilla/5.0",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockStorage.getSession).mockReturnValue(Effect.succeed(Option.some(validSession)));
@@ -65,6 +66,7 @@ describe("authenticate use case", () => {
       userAgent: "Mozilla/5.0",
       expiresAt: new Date(Date.now() - 1000), // 1 second ago
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     const newSession: AuthSession = {
@@ -73,6 +75,7 @@ describe("authenticate use case", () => {
       userAgent: "Mozilla/5.0",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockStorage.getSession).mockReturnValue(Effect.succeed(Option.some(expiredSession)));
@@ -98,6 +101,7 @@ describe("authenticate use case", () => {
       userAgent: "Mozilla/5.0",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockStorage.getSession).mockReturnValue(Effect.succeed(Option.none()));
@@ -120,6 +124,7 @@ describe("authenticate use case", () => {
       userAgent: "Mozilla/5.0",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     const newSession: AuthSession = {
@@ -128,6 +133,7 @@ describe("authenticate use case", () => {
       userAgent: "Mozilla/5.0",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     vi.mocked(mockStorage.getSession).mockReturnValue(Effect.succeed(Option.some(existingSession)));
@@ -165,6 +171,7 @@ describe("authenticate use case", () => {
       userAgent: "Mozilla/5.0",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     const scrapingError: ScrapingError = {

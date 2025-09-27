@@ -124,19 +124,23 @@ describe("NullNullJobService", () => {
     userAgent: "Mozilla/5.0",
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     createdAt: new Date(),
+    updatedAt: new Date(),
   });
 
-  const createMockJobRun = (id: string, status: "RUNNING" | "COMPLETED" | "FAILED"): JobRun => ({
-    id,
-    criteriaId: "criteria-1",
-    startedAt: new Date(),
-    completedAt: status !== "RUNNING" ? new Date() : undefined,
-    jobsFound: 10,
-    jobsProcessed: 8,
-    jobsScored: 5,
-    errors: status === "FAILED" ? ["Some error"] : [],
-    status,
-  });
+  const createMockJobRun = (id: string, status: "RUNNING" | "COMPLETED" | "FAILED"): JobRun => {
+    const base = {
+      id,
+      criteriaId: "criteria-1",
+      startedAt: new Date(),
+      jobsFound: 10,
+      jobsProcessed: 8,
+      jobsScored: 5,
+      errors: status === "FAILED" ? ["Some error"] : [],
+      status,
+    };
+
+    return status === "RUNNING" ? base : { ...base, completedAt: new Date() };
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -176,7 +180,7 @@ describe("NullNullJobService", () => {
 
   describe("runJobDiscovery", () => {
     it("should run complete job discovery pipeline", async () => {
-      const criteria = config.criteria[0];
+      const criteria = config.criteria[0]!;
       const session = createMockAuthSession();
       const scrapedJobs = [createMockJob("job-1", "TypeScript Developer", "Tech Corp")];
       const processedJob = createMockJob("job-1", "TypeScript Developer", "Tech Corp");
@@ -187,6 +191,8 @@ describe("NullNullJobService", () => {
         gaps: [],
         cvVersion: "1.0",
         scoredAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockStorage.getSession).mockReturnValue(Effect.succeed(Option.some(session)));
@@ -213,7 +219,7 @@ describe("NullNullJobService", () => {
     });
 
     it("should run dry run without LLM processing", async () => {
-      const criteria = config.criteria[0];
+      const criteria = config.criteria[0]!;
       const session = createMockAuthSession();
       const scrapedJobs = [createMockJob("job-1", "TypeScript Developer", "Tech Corp")];
 
@@ -222,7 +228,7 @@ describe("NullNullJobService", () => {
       vi.mocked(mockStorage.getJobsByCriteria).mockReturnValue(Effect.succeed([]));
       vi.mocked(mockScraper.scrapeJobs).mockReturnValue(Effect.succeed(scrapedJobs));
       vi.mocked(mockStorage.getSeenJobIds).mockReturnValue(Effect.succeed([]));
-      vi.mocked(mockStorage.saveJob).mockReturnValue(Effect.succeed(scrapedJobs[0]));
+      vi.mocked(mockStorage.saveJob).mockReturnValue(Effect.succeed(scrapedJobs[0]!));
       vi.mocked(mockStorage.markJobAsSeen).mockReturnValue(Effect.succeed(undefined));
       vi.mocked(mockStorage.saveJobRun).mockReturnValue(Effect.succeed(undefined));
 
@@ -239,7 +245,7 @@ describe("NullNullJobService", () => {
 
   describe("scoreExistingJobs", () => {
     it("should score existing jobs", async () => {
-      const criteria = config.criteria[0];
+      const criteria = config.criteria[0]!;
       const jobs = [createMockJob("job-1", "TypeScript Developer", "Tech Corp")];
       const jobScore = {
         jobId: "job-1",
@@ -248,6 +254,8 @@ describe("NullNullJobService", () => {
         gaps: [],
         cvVersion: "1.0",
         scoredAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       vi.mocked(mockStorage.getJobsByCriteria).mockReturnValue(Effect.succeed(jobs));
@@ -258,14 +266,14 @@ describe("NullNullJobService", () => {
       const result = await Effect.runPromise(service.scoreExistingJobs(criteria));
 
       expect(result).toHaveLength(1);
-      expect(result[0].score).toBe(85);
-      expect(mockLLMService.scoreJob).toHaveBeenCalledWith(jobs[0], "");
+      expect(result[0]!.score).toBe(85);
+      expect(mockLLMService.scoreJob).toHaveBeenCalledWith(jobs[0]!, "");
     });
   });
 
   describe("sendLastResults", () => {
     it("should send last results", async () => {
-      const criteria = config.criteria[0];
+      const criteria = config.criteria[0]!;
       const jobs = [
         { ...createMockJob("job-1", "TypeScript Developer", "Tech Corp"), score: 85 },
         { ...createMockJob("job-2", "React Developer", "Startup Inc"), score: 60 },

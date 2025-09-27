@@ -81,8 +81,8 @@ describe("processJobs use case", () => {
     expect(result[0]).toEqual(processedJob1);
     expect(result[1]).toEqual(processedJob2);
     expect(mockLLMService.extractJobData).toHaveBeenCalledTimes(2);
-    expect(mockLLMService.extractJobData).toHaveBeenCalledWith(rawJobs[0].content);
-    expect(mockLLMService.extractJobData).toHaveBeenCalledWith(rawJobs[1].content);
+    expect(mockLLMService.extractJobData).toHaveBeenCalledWith(rawJobs[0]!.content);
+    expect(mockLLMService.extractJobData).toHaveBeenCalledWith(rawJobs[1]!.content);
   });
 
   it("should skip failed jobs when retryFailed is false", { timeout: 15000 }, async () => {

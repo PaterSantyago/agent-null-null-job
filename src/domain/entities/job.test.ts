@@ -70,6 +70,7 @@ describe("AuthSession Entity", () => {
       userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     expect(session.id).toBe("session-123");
@@ -87,6 +88,7 @@ describe("AuthSession Entity", () => {
       userAgent: "Mozilla/5.0",
       expiresAt: new Date(Date.now() - 1000), // 1 second ago
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     expect(expiredSession.expiresAt.getTime()).toBeLessThan(Date.now());
@@ -160,6 +162,8 @@ describe("JobScore Entity", () => {
       gaps: ["Missing PostgreSQL experience", "No team lead experience"],
       cvVersion: "1.0",
       scoredAt: new Date("2024-01-15T10:00:00Z"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     expect(score.jobId).toBe("job-123");
@@ -179,6 +183,8 @@ describe("JobScore Entity", () => {
       gaps: [],
       cvVersion: "2.0",
       scoredAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     expect(perfectScore.score).toBe(100);
@@ -193,6 +199,8 @@ describe("JobScore Entity", () => {
       gaps: ["No TypeScript", "No React", "No Node.js", "Wrong seniority level"],
       cvVersion: "1.0",
       scoredAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     expect(lowScore.score).toBe(25);
