@@ -92,11 +92,11 @@ Create a `.env` file in the project root:
 
 ```bash
 # Required
-OPENAI_API_KEY=your_openai_api_key
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_CHAT_ID=your_telegram_chat_id
 
 # Optional
+OPENAI_API_KEY=your_openai_api_key
 ENCRYPTION_KEY=your_encryption_key_for_secure_storage
 ```
 

@@ -17,7 +17,7 @@ export const loadConfig = (
         const config = JSON.parse(configContent);
 
         // Validate required environment variables
-        const requiredEnvVars = ["OPENAI_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"];
+        const requiredEnvVars = ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"];
 
         for (const envVar of requiredEnvVars) {
           if (!process.env[envVar as keyof typeof process.env]) {

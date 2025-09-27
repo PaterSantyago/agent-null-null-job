@@ -105,7 +105,7 @@ describe("loadConfig", () => {
     vi.stubGlobal("process", {
       ...process,
       env: {
-        // Missing OPENAI_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+        // Missing TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
       },
     });
 
