@@ -1,8 +1,8 @@
 import { logger, symbols, isTTY } from "./logger.js";
 
 // Declare global functions for Node.js environment
-declare const setInterval: (callback: () => void, ms: number) => ReturnType<typeof setInterval>;
-declare const clearInterval: (id: ReturnType<typeof setInterval>) => void;
+declare const setInterval: (callback: () => void, ms: number) => number;
+declare const clearInterval: (id: number) => void;
 
 export interface Task {
   readonly title: string;
@@ -15,7 +15,7 @@ export interface TaskOptions {
 }
 
 class TaskRunner {
-  private readonly tasks: readonly Task[] = [];
+  private tasks: Task[] = [];
   private readonly options: TaskOptions;
 
   constructor(options: TaskOptions = {}) {

@@ -57,8 +57,8 @@ describe("loadConfig", () => {
     expect(result.linkedin.requestDelay).toBe(2000);
     expect(result.linkedin.maxRetries).toBe(5);
     expect(result.criteria).toHaveLength(1);
-    expect(result.criteria[0].id).toBe("custom-criteria");
-    expect(result.criteria[0].keywords).toEqual(["python", "django"]);
+    expect(result.criteria[0]!.id).toBe("custom-criteria");
+    expect(result.criteria[0]!.keywords).toEqual(["python", "django"]);
     expect(result.llm.apiKey).toBe("test-openai-key");
     expect(result.telegram.botToken).toBe("test-telegram-token");
     expect(result.telegram.chatId).toBe("test-chat-id");
@@ -91,13 +91,13 @@ describe("loadConfig", () => {
     expect(result.scoring.cvPath).toBe(join(process.cwd(), "cv.txt"));
     expect(result.scoring.cvVersion).toBe("1.0");
     expect(result.criteria).toHaveLength(1);
-    expect(result.criteria[0].id).toBe("default");
-    expect(result.criteria[0].keywords).toEqual(["typescript", "node.js", "react"]);
-    expect(result.criteria[0].location).toBe("Remote");
-    expect(result.criteria[0].remotePolicy).toBe("REMOTE");
-    expect(result.criteria[0].seniority).toBe("SENIOR");
-    expect(result.criteria[0].employmentType).toBe("FULL_TIME");
-    expect(result.criteria[0].enabled).toBe(true);
+    expect(result.criteria[0]!.id).toBe("default");
+    expect(result.criteria[0]!.keywords).toEqual(["typescript", "node.js", "react"]);
+    expect(result.criteria[0]!.location).toBe("Remote");
+    expect(result.criteria[0]!.remotePolicy).toBe("REMOTE");
+    expect(result.criteria[0]!.seniority).toBe("SENIOR");
+    expect(result.criteria[0]!.employmentType).toBe("FULL_TIME");
+    expect(result.criteria[0]!.enabled).toBe(true);
   });
 
   it("should fail when required environment variables are missing", async () => {

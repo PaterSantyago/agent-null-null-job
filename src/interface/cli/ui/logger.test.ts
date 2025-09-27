@@ -180,7 +180,7 @@ describe("Terminal Capabilities", () => {
     process.env = { ...originalEnv, NO_COLOR: "1" };
 
     // Test that colors are disabled by checking the actual values
-    expect(process.env.NO_COLOR).toBe("1");
+    expect(process.env["NO_COLOR"]).toBe("1");
 
     process.env = originalEnv;
   });
@@ -190,7 +190,7 @@ describe("Terminal Capabilities", () => {
     process.env = { ...originalEnv, FORCE_COLOR: "1" };
 
     // Test that colors are enabled by checking the actual values
-    expect(process.env.FORCE_COLOR).toBe("1");
+    expect(process.env["FORCE_COLOR"]).toBe("1");
 
     process.env = originalEnv;
   });

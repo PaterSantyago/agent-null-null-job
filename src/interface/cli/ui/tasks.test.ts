@@ -19,7 +19,7 @@ vi.mock("./logger.js", () => ({
 }));
 
 // Mock process methods
-const mockProcessExit = vi.fn();
+const mockProcessExit = vi.fn() as any;
 const mockProcessStdoutWrite = vi.fn();
 
 describe("TaskRunner", () => {

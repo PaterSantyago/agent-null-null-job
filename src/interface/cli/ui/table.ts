@@ -106,7 +106,7 @@ class Table {
               ? "[Object]"
               : String(rawValue as string | number | boolean | symbol);
         }
-        return Math.max(widths[i], value.length);
+        return Math.max(widths[i] ?? 0, value.length);
       });
     }, initialWidths);
   }
@@ -231,8 +231,8 @@ class Table {
     right: string,
   ): void {
     const paddedValues = values.map((value, i) => {
-      const width = widths[i];
-      const align = this.columns[i].align ?? "left";
+      const width = widths[i] ?? 0;
+      const align = this.columns[i]?.align ?? "left";
 
       if (align === "center") {
         const padding = width - value.length;

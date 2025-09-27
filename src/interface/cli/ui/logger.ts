@@ -2,7 +2,7 @@ import { env } from "node:process";
 import { isatty } from "node:tty";
 
 // Terminal capabilities
-const supportsColor = !env.NO_COLOR && (isatty(1) || env.FORCE_COLOR);
+const supportsColor = !env["NO_COLOR"] && (isatty(1) || env["FORCE_COLOR"]);
 const isTTY = isatty(1);
 
 // Colors (only if supported)

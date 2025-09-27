@@ -147,6 +147,8 @@ CV: ${cvContent}`,
             gaps: validated.gaps,
             cvVersion: "1.0", // TODO: Make configurable
             scoredAt: new Date(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
           };
         },
         catch: (error) =>

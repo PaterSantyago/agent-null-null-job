@@ -82,7 +82,7 @@ export const createSqliteStorageService = (
     ): Effect.Effect<readonly Job[], StorageError> => {
       return Effect.tryPromise({
         try: async () => {
-          const jobs: readonly Job[] = [];
+          const jobs: Job[] = [];
           const iterator = keyv.iterator?.({ namespace: "job" });
 
           if (iterator) {
@@ -184,7 +184,7 @@ export const createSqliteStorageService = (
     getLatestJobRun: (criteriaId: string): Effect.Effect<Option.Option<JobRun>, StorageError> => {
       return Effect.tryPromise({
         try: async () => {
-          const runs: readonly JobRun[] = [];
+          const runs: JobRun[] = [];
           const iterator = keyv.iterator?.({ namespace: "run" });
 
           if (iterator) {
@@ -206,7 +206,9 @@ export const createSqliteStorageService = (
             return Option.none();
           }
 
-          const latest = runs.sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())[0];
+          const latest = runs.sort(
+            (a: JobRun, b: JobRun) => b.startedAt.getTime() - a.startedAt.getTime(),
+          )[0];
           return latest ? Option.some(latest) : Option.none();
         },
         catch: (error) =>
@@ -238,7 +240,7 @@ export const createSqliteStorageService = (
     getJobScores: (jobId: string): Effect.Effect<readonly JobScore[], StorageError> => {
       return Effect.tryPromise({
         try: async () => {
-          const scores: readonly JobScore[] = [];
+          const scores: JobScore[] = [];
           const iterator = keyv.iterator?.({ namespace: "score" });
 
           if (iterator) {
@@ -255,7 +257,7 @@ export const createSqliteStorageService = (
           }
 
           return scores.sort(
-            (a, b) => b.scoredAt.getTime() - a.scoredAt.getTime(),
+            (a: JobScore, b: JobScore) => b.scoredAt.getTime() - a.scoredAt.getTime(),
           ) as readonly JobScore[];
         },
         catch: (error) =>
@@ -302,7 +304,7 @@ export const createSqliteStorageService = (
     getSeenJobIds: (): Effect.Effect<readonly string[], StorageError> => {
       return Effect.tryPromise({
         try: async () => {
-          const seenIds: readonly string[] = [];
+          const seenIds: string[] = [];
           const iterator = keyv.iterator?.({ namespace: "seen" });
 
           if (iterator) {

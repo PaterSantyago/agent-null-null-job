@@ -164,6 +164,23 @@ export default [
       "no-console": "off",
     },
   },
+  {
+    files: ["src/infrastructure/**/*.ts"],
+    rules: {
+      // Allow functional programming violations in infrastructure layer for practical reasons
+      "functional/immutable-data": "off",
+      "functional/no-let": "off",
+      "functional/prefer-readonly-type": "off",
+      "no-console": "off",
+      // Relax TypeScript strict rules for infrastructure adapters
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unsafe-assignment": "warn",
+      "@typescript-eslint/no-unsafe-call": "warn",
+      "@typescript-eslint/no-unsafe-member-access": "warn",
+      "@typescript-eslint/no-unsafe-argument": "warn",
+      "@typescript-eslint/no-unsafe-return": "warn",
+    },
+  },
   prettier,
   {
     ignores: [

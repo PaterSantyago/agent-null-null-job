@@ -100,13 +100,13 @@ export const callout = (message: string, options?: CalloutOptions): Callout =>
 
 // Export convenience functions
 export const info = (message: string, title?: string): void =>
-  callout(message, { type: "info", title }).render();
+  callout(message, { type: "info", ...(title && { title }) }).render();
 
 export const success = (message: string, title?: string): void =>
-  callout(message, { type: "success", title }).render();
+  callout(message, { type: "success", ...(title && { title }) }).render();
 
 export const warning = (message: string, title?: string): void =>
-  callout(message, { type: "warning", title }).render();
+  callout(message, { type: "warning", ...(title && { title }) }).render();
 
 export const error = (message: string, title?: string): void =>
-  callout(message, { type: "error", title }).render();
+  callout(message, { type: "error", ...(title && { title }) }).render();

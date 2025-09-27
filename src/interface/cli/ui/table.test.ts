@@ -148,9 +148,9 @@ describe("Table", () => {
     it("should handle different column alignments", () => {
       const table = printTable({ border: false });
       const columns = [
-        { key: "name", header: "Name", width: 10, align: "left" },
-        { key: "age", header: "Age", width: 5, align: "center" },
-        { key: "score", header: "Score", width: 8, align: "right" },
+        { key: "name", header: "Name", width: 10, align: "left" as const },
+        { key: "age", header: "Age", width: 5, align: "center" as const },
+        { key: "score", header: "Score", width: 8, align: "right" as const },
       ];
       const rows = [{ name: "John", age: 30, score: 95 }];
 

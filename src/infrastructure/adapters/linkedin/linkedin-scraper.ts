@@ -62,6 +62,7 @@ export const createLinkedInScraper = (): LinkedInScraper => {
             userAgent: await page.evaluate(() => navigator.userAgent),
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
             createdAt: new Date(),
+            updatedAt: new Date(),
           };
 
           await browser.close();
@@ -164,7 +165,7 @@ export const createLinkedInScraper = (): LinkedInScraper => {
           // Extract job data
           const jobs = await page.evaluate(() => {
             const jobElements = document.querySelectorAll('[data-test-id="job-card"]');
-            const jobs: readonly any[] = [];
+            const jobs: any[] = [];
 
             jobElements.forEach((element, index) => {
               try {
@@ -185,19 +186,22 @@ export const createLinkedInScraper = (): LinkedInScraper => {
 
                   if (timeText.includes("hour") || timeText.includes("minute")) {
                     jobs.push({
-                      id: `job-${Date.now()}-${index}`,
+                      id: { value: `job-${Date.now()}-${index}` },
                       title,
                       company,
                       location,
                       remotePolicy: "UNKNOWN",
                       seniority: "UNKNOWN",
                       employmentType: "FULL_TIME",
-                      postedAt: new Date().toISOString(),
+                      postedAt: new Date(),
+                      salaryHint: "",
+                      languages: [],
+                      techStack: [],
                       description: `${title} at ${company} in ${location}`,
                       applyUrl,
                       source: "linkedin",
-                      createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString(),
+                      createdAt: new Date(),
+                      updatedAt: new Date(),
                     });
                   }
                 }
@@ -212,7 +216,7 @@ export const createLinkedInScraper = (): LinkedInScraper => {
           await browser.close();
 
           return jobs.map((job) => ({
-            id: { value: job.id },
+            id: { value: job.id.value },
             title: job.title,
             company: job.company,
             location: job.location,

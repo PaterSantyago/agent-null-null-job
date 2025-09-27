@@ -108,7 +108,20 @@ describe("createSqliteStorageService", () => {
     get: vi.fn(),
     delete: vi.fn(),
     iterator: vi.fn(),
-  };
+    opts: {},
+    hooks: {},
+    stats: {},
+    _store: {},
+  } as any;
+
+  const createMockWordArray = (jsonString: string) => ({
+    words: [],
+    sigBytes: 0,
+    concat: vi.fn(),
+    clamp: vi.fn(),
+    clone: vi.fn(),
+    toString: vi.fn().mockReturnValue(jsonString),
+  });
 
   let storage: ReturnType<typeof createSqliteStorageService>;
 
@@ -137,28 +150,33 @@ describe("createSqliteStorageService", () => {
     userAgent: "Mozilla/5.0",
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     createdAt: new Date(),
+    updatedAt: new Date(),
   });
 
-  const createMockJobRun = (id: string): JobRun => ({
-    id,
-    criteriaId: "criteria-1",
-    startedAt: new Date(),
-    completedAt: new Date(),
-    jobsFound: 10,
-    jobsProcessed: 8,
-    jobsScored: 5,
-    errors: [],
-    status: "COMPLETED",
-  });
+  const createMockJobRun = (id: string): JobRun =>
+    ({
+      id,
+      criteriaId: "criteria-1",
+      startedAt: new Date(),
+      completedAt: new Date(),
+      jobsFound: 10,
+      jobsProcessed: 8,
+      jobsScored: 5,
+      errors: [],
+      status: "COMPLETED",
+    }) as JobRun;
 
-  const createMockJobScore = (jobId: string): JobScore => ({
-    jobId,
-    score: 85,
-    rationale: "Great match",
-    gaps: [],
-    cvVersion: "1.0",
-    scoredAt: new Date(),
-  });
+  const createMockJobScore = (jobId: string): JobScore =>
+    ({
+      jobId,
+      score: 85,
+      rationale: "Great match",
+      gaps: [],
+      cvVersion: "1.0",
+      scoredAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }) as JobScore;
 
   beforeEach(async () => {
     // Reset mock functions
@@ -173,10 +191,7 @@ describe("createSqliteStorageService", () => {
     vi.clearAllMocks();
 
     // Create storage service with fresh mocks
-    storage = createSqliteStorageService({
-      dataDir: "/tmp/test",
-      encryptionKey: "test-key",
-    });
+    storage = createSqliteStorageService("/tmp/test", "test-key");
   });
 
   describe("saveJob", () => {
@@ -206,8 +221,8 @@ describe("createSqliteStorageService", () => {
 
       // Mock the decrypt function to return our job
       const { default: CryptoJS } = await import("crypto-js");
-      vi.mocked(CryptoJS.AES.decrypt).mockReturnValue({
-        toString: vi.fn().mockReturnValue(
+      vi.mocked(CryptoJS.AES.decrypt).mockReturnValue(
+        createMockWordArray(
           JSON.stringify({
             ...job,
             postedAt: job.postedAt.toISOString(),
@@ -215,7 +230,7 @@ describe("createSqliteStorageService", () => {
             updatedAt: job.updatedAt.toISOString(),
           }),
         ),
-      });
+      );
 
       const result = await Effect.runPromise(storage.getJob("job-123"));
 
@@ -274,8 +289,8 @@ describe("createSqliteStorageService", () => {
       // Mock decrypt to return different jobs
       const { default: CryptoJS } = await import("crypto-js");
       vi.mocked(CryptoJS.AES.decrypt)
-        .mockReturnValueOnce({
-          toString: vi.fn().mockReturnValue(
+        .mockReturnValueOnce(
+          createMockWordArray(
             JSON.stringify({
               ...job1,
               postedAt: job1.postedAt.toISOString(),
@@ -283,9 +298,9 @@ describe("createSqliteStorageService", () => {
               updatedAt: job1.updatedAt.toISOString(),
             }),
           ),
-        })
-        .mockReturnValueOnce({
-          toString: vi.fn().mockReturnValue(
+        )
+        .mockReturnValueOnce(
+          createMockWordArray(
             JSON.stringify({
               ...job2,
               postedAt: job2.postedAt.toISOString(),
@@ -293,15 +308,15 @@ describe("createSqliteStorageService", () => {
               updatedAt: job2.updatedAt.toISOString(),
             }),
           ),
-        });
+        );
 
       const result = await Effect.runPromise(storage.getJobsByCriteria("criteria-1"));
 
       expect(result).toHaveLength(2);
-      expect(result[0].id).toEqual(job1.id);
-      expect(result[0].title).toEqual(job1.title);
-      expect(result[1].id).toEqual(job2.id);
-      expect(result[1].title).toEqual(job2.title);
+      expect(result[0]!.id).toEqual(job1.id);
+      expect(result[0]!.title).toEqual(job1.title);
+      expect(result[1]!.id).toEqual(job2.id);
+      expect(result[1]!.title).toEqual(job2.title);
     });
 
     it("should filter jobs by since date", async () => {
@@ -325,8 +340,8 @@ describe("createSqliteStorageService", () => {
 
       const { default: CryptoJS } = await import("crypto-js");
       vi.mocked(CryptoJS.AES.decrypt)
-        .mockReturnValueOnce({
-          toString: vi.fn().mockReturnValue(
+        .mockReturnValueOnce(
+          createMockWordArray(
             JSON.stringify({
               ...oldJob,
               postedAt: oldJob.postedAt.toISOString(),
@@ -334,9 +349,9 @@ describe("createSqliteStorageService", () => {
               updatedAt: oldJob.updatedAt.toISOString(),
             }),
           ),
-        })
-        .mockReturnValueOnce({
-          toString: vi.fn().mockReturnValue(
+        )
+        .mockReturnValueOnce(
+          createMockWordArray(
             JSON.stringify({
               ...newJob,
               postedAt: newJob.postedAt.toISOString(),
@@ -344,14 +359,14 @@ describe("createSqliteStorageService", () => {
               updatedAt: newJob.updatedAt.toISOString(),
             }),
           ),
-        });
+        );
 
       const since = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
       const result = await Effect.runPromise(storage.getJobsByCriteria("criteria-1", since));
 
       expect(result).toHaveLength(1);
-      expect(result[0].id).toEqual(newJob.id);
-      expect(result[0].title).toEqual(newJob.title);
+      expect(result[0]!.id).toEqual(newJob.id);
+      expect(result[0]!.title).toEqual(newJob.title);
     });
 
     it("should handle iterator error", async () => {
@@ -387,15 +402,16 @@ describe("createSqliteStorageService", () => {
       mockKeyv.get.mockResolvedValue("encrypted-data");
 
       const { default: CryptoJS } = await import("crypto-js");
-      vi.mocked(CryptoJS.AES.decrypt).mockReturnValue({
-        toString: vi.fn().mockReturnValue(
+      vi.mocked(CryptoJS.AES.decrypt).mockReturnValue(
+        createMockWordArray(
           JSON.stringify({
             ...session,
             expiresAt: session.expiresAt.toISOString(),
             createdAt: session.createdAt.toISOString(),
+            updatedAt: session.updatedAt.toISOString(),
           }),
         ),
-      });
+      );
 
       const result = await Effect.runPromise(storage.getSession());
 
@@ -446,7 +462,7 @@ describe("createSqliteStorageService", () => {
   describe("getLatestJobRun", () => {
     it("should return latest job run", async () => {
       const run1 = createMockJobRun("run-1");
-      const run2 = createMockJobRun("run-2");
+      const run2 = { ...createMockJobRun("run-2") };
       run2.startedAt = new Date(run1.startedAt.getTime() + 1000); // 1 second later
 
       const mockIterator = {
@@ -460,24 +476,24 @@ describe("createSqliteStorageService", () => {
 
       const { default: CryptoJS } = await import("crypto-js");
       vi.mocked(CryptoJS.AES.decrypt)
-        .mockReturnValueOnce({
-          toString: vi.fn().mockReturnValue(
+        .mockReturnValueOnce(
+          createMockWordArray(
             JSON.stringify({
               ...run1,
               startedAt: run1.startedAt.toISOString(),
               completedAt: run1.completedAt?.toISOString(),
             }),
           ),
-        })
-        .mockReturnValueOnce({
-          toString: vi.fn().mockReturnValue(
+        )
+        .mockReturnValueOnce(
+          createMockWordArray(
             JSON.stringify({
               ...run2,
               startedAt: run2.startedAt.toISOString(),
               completedAt: run2.completedAt?.toISOString(),
             }),
           ),
-        });
+        );
 
       const result = await Effect.runPromise(storage.getLatestJobRun("criteria-1"));
 
@@ -520,7 +536,7 @@ describe("createSqliteStorageService", () => {
   describe("getJobScores", () => {
     it("should return job scores sorted by date", async () => {
       const score1 = createMockJobScore("job-123");
-      const score2 = createMockJobScore("job-123");
+      const score2 = { ...createMockJobScore("job-123") };
       score2.scoredAt = new Date(score1.scoredAt.getTime() + 1000); // 1 second later
 
       const mockIterator = {
@@ -534,30 +550,30 @@ describe("createSqliteStorageService", () => {
 
       const { default: CryptoJS } = await import("crypto-js");
       vi.mocked(CryptoJS.AES.decrypt)
-        .mockReturnValueOnce({
-          toString: vi.fn().mockReturnValue(
+        .mockReturnValueOnce(
+          createMockWordArray(
             JSON.stringify({
               ...score1,
               scoredAt: score1.scoredAt.toISOString(),
             }),
           ),
-        })
-        .mockReturnValueOnce({
-          toString: vi.fn().mockReturnValue(
+        )
+        .mockReturnValueOnce(
+          createMockWordArray(
             JSON.stringify({
               ...score2,
               scoredAt: score2.scoredAt.toISOString(),
             }),
           ),
-        });
+        );
 
       const result = await Effect.runPromise(storage.getJobScores("job-123"));
 
       expect(result).toHaveLength(2);
-      expect(result[0].jobId).toEqual(score2.jobId); // Should be sorted by date descending
-      expect(result[0].score).toEqual(score2.score);
-      expect(result[1].jobId).toEqual(score1.jobId);
-      expect(result[1].score).toEqual(score1.score);
+      expect(result[0]!.jobId).toEqual(score2.jobId); // Should be sorted by date descending
+      expect(result[0]!.score).toEqual(score2.score);
+      expect(result[1]!.jobId).toEqual(score1.jobId);
+      expect(result[1]!.score).toEqual(score1.score);
     });
   });
 
