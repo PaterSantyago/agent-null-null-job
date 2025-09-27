@@ -116,10 +116,9 @@ class TaskRunner {
   }
 
   private *createSpinner() {
-    let index = 0;
-    while (true) {
+    const indices = Array.from({ length: Infinity }, (_, i) => i);
+    for (const index of indices) {
       yield symbols.spinner[index % symbols.spinner.length];
-      index++;
     }
   }
 }

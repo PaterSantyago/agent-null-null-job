@@ -29,7 +29,7 @@ class Table {
 
   setColumns(cols: readonly TableColumn[]): Table {
     const newTable = new Table(this.options);
-    // Create new instance with updated properties
+    // Create a new instance with updated properties using Object.create
     const newInstance = Object.create(Object.getPrototypeOf(newTable));
     newInstance.columns = [...cols];
     newInstance.rows = [...this.rows];
@@ -84,11 +84,28 @@ class Table {
     return this.rows.reduce((widths, row) => {
       return this.columns.map((col, i) => {
         const rawValue = row[col.key];
-        const value = rawValue === null || rawValue === undefined ? "" : 
-          typeof rawValue === 'string' ? rawValue : 
-          typeof rawValue === 'number' ? rawValue.toString() :
-          typeof rawValue === 'boolean' ? rawValue.toString() :
-          JSON.stringify(rawValue);
+        let value: string;
+        if (rawValue === null || rawValue === undefined) {
+          value = "";
+        } else if (typeof rawValue === "string") {
+          value = rawValue;
+        } else if (typeof rawValue === "number") {
+          value = rawValue.toString();
+        } else if (typeof rawValue === "boolean") {
+          value = rawValue.toString();
+        } else if (typeof rawValue === "object" && rawValue !== null) {
+          value = JSON.stringify(rawValue);
+        } else if (typeof rawValue === "symbol") {
+          value = rawValue.toString();
+        } else if (typeof rawValue === "function") {
+          value = "[Function]";
+        } else {
+          // This should never happen with proper type checking, but handle it safely
+          value =
+            typeof rawValue === "object"
+              ? "[Object]"
+              : String(rawValue as string | number | boolean | symbol);
+        }
         return Math.max(widths[i], value.length);
       });
     }, initialWidths);
@@ -117,7 +134,21 @@ class Table {
     for (const row of this.rows) {
       const values = this.columns.map((col) => {
         const rawValue = row[col.key];
-        return rawValue === null || rawValue === undefined ? "" : String(rawValue);
+        return rawValue === null || rawValue === undefined
+          ? ""
+          : typeof rawValue === "string"
+            ? rawValue
+            : typeof rawValue === "number"
+              ? rawValue.toString()
+              : typeof rawValue === "boolean"
+                ? rawValue.toString()
+                : typeof rawValue === "object" && rawValue !== null
+                  ? JSON.stringify(rawValue)
+                  : typeof rawValue === "symbol"
+                    ? rawValue.toString()
+                    : typeof rawValue === "function"
+                      ? "[Function]"
+                      : String(rawValue as string | number | boolean | symbol);
       });
       this.renderRow(values, widths, "│", "│");
     }
@@ -140,7 +171,21 @@ class Table {
     for (const row of this.rows) {
       const values = this.columns.map((col) => {
         const rawValue = row[col.key];
-        return rawValue === null || rawValue === undefined ? "" : String(rawValue);
+        return rawValue === null || rawValue === undefined
+          ? ""
+          : typeof rawValue === "string"
+            ? rawValue
+            : typeof rawValue === "number"
+              ? rawValue.toString()
+              : typeof rawValue === "boolean"
+                ? rawValue.toString()
+                : typeof rawValue === "object" && rawValue !== null
+                  ? JSON.stringify(rawValue)
+                  : typeof rawValue === "symbol"
+                    ? rawValue.toString()
+                    : typeof rawValue === "function"
+                      ? "[Function]"
+                      : String(rawValue as string | number | boolean | symbol);
       });
       this.renderRow(values, widths, "", "");
     }
@@ -151,11 +196,28 @@ class Table {
     for (const row of this.rows) {
       const values = this.columns.map((col) => {
         const rawValue = row[col.key];
-        const value = rawValue === null || rawValue === undefined ? "" : 
-          typeof rawValue === 'string' ? rawValue : 
-          typeof rawValue === 'number' ? rawValue.toString() :
-          typeof rawValue === 'boolean' ? rawValue.toString() :
-          JSON.stringify(rawValue);
+        let value: string;
+        if (rawValue === null || rawValue === undefined) {
+          value = "";
+        } else if (typeof rawValue === "string") {
+          value = rawValue;
+        } else if (typeof rawValue === "number") {
+          value = rawValue.toString();
+        } else if (typeof rawValue === "boolean") {
+          value = rawValue.toString();
+        } else if (typeof rawValue === "object" && rawValue !== null) {
+          value = JSON.stringify(rawValue);
+        } else if (typeof rawValue === "symbol") {
+          value = rawValue.toString();
+        } else if (typeof rawValue === "function") {
+          value = "[Function]";
+        } else {
+          // This should never happen with proper type checking, but handle it safely
+          value =
+            typeof rawValue === "object"
+              ? "[Object]"
+              : String(rawValue as string | number | boolean | symbol);
+        }
         return `${col.header}: ${value}`;
       });
       logger.log(`  ${values.join(", ")}`);
@@ -186,14 +248,18 @@ class Table {
 
     const cellContents = paddedValues.map(
       (paddedValue) =>
-        " ".repeat(this.options.padding ?? 1) + paddedValue + " ".repeat(this.options.padding ?? 1)
+        " ".repeat(this.options.padding ?? 1) + paddedValue + " ".repeat(this.options.padding ?? 1),
     );
 
     const separators = Array.from({ length: values.length - 1 }, () => "│");
 
-    const parts = [left, ...cellContents.flatMap((content, i) => 
-      i < cellContents.length - 1 ? [content, separators[i]] : [content]
-    ), right];
+    const parts = [
+      left,
+      ...cellContents.flatMap((content, i) =>
+        i < cellContents.length - 1 ? [content, separators[i]] : [content],
+      ),
+      right,
+    ];
 
     logger.log(parts.join(""));
   }

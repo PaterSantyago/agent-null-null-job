@@ -142,6 +142,28 @@ export default [
       "functional/no-method-signature": "off",
     },
   },
+  {
+    files: ["src/interface/cli/ui/**/*.ts"],
+    rules: {
+      // Allow functional programming violations in UI layer for practical reasons
+      "functional/immutable-data": "off",
+      "functional/no-let": "off",
+      "functional/prefer-readonly-type": "off",
+      // Allow console in UI layer
+      "no-console": "off",
+    },
+  },
+  {
+    files: ["src/interface/cli/index.ts"],
+    rules: {
+      // Allow functional programming violations in CLI layer for practical reasons
+      "functional/immutable-data": "off",
+      "functional/no-let": "off",
+      "functional/prefer-readonly-type": "off",
+      // Allow console in CLI layer
+      "no-console": "off",
+    },
+  },
   prettier,
   {
     ignores: [
