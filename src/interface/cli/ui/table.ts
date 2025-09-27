@@ -30,29 +30,29 @@ class Table {
   setColumns(cols: readonly TableColumn[]): Table {
     const newTable = new Table(this.options);
     // Create new instance with updated properties
-    return Object.create(Object.getPrototypeOf(newTable), {
-      columns: { value: [...cols], writable: true, enumerable: true },
-      rows: { value: [...this.rows], writable: true, enumerable: true },
-      options: { value: this.options, writable: true, enumerable: true },
-    });
+    const newInstance = Object.create(Object.getPrototypeOf(newTable));
+    newInstance.columns = [...cols];
+    newInstance.rows = [...this.rows];
+    newInstance.options = this.options;
+    return newInstance;
   }
 
   addRow(row: Record<string, unknown>): Table {
     const newTable = new Table(this.options);
-    return Object.create(Object.getPrototypeOf(newTable), {
-      columns: { value: [...this.columns], writable: true, enumerable: true },
-      rows: { value: [...this.rows, row], writable: true, enumerable: true },
-      options: { value: this.options, writable: true, enumerable: true },
-    });
+    const newInstance = Object.create(Object.getPrototypeOf(newTable));
+    newInstance.columns = [...this.columns];
+    newInstance.rows = [...this.rows, row];
+    newInstance.options = this.options;
+    return newInstance;
   }
 
   addRows(rows: readonly Record<string, unknown>[]): Table {
     const newTable = new Table(this.options);
-    return Object.create(Object.getPrototypeOf(newTable), {
-      columns: { value: [...this.columns], writable: true, enumerable: true },
-      rows: { value: [...this.rows, ...rows], writable: true, enumerable: true },
-      options: { value: this.options, writable: true, enumerable: true },
-    });
+    const newInstance = Object.create(Object.getPrototypeOf(newTable));
+    newInstance.columns = [...this.columns];
+    newInstance.rows = [...this.rows, ...rows];
+    newInstance.options = this.options;
+    return newInstance;
   }
 
   render(): void {
@@ -84,7 +84,11 @@ class Table {
     return this.rows.reduce((widths, row) => {
       return this.columns.map((col, i) => {
         const rawValue = row[col.key];
-        const value = rawValue === null || rawValue === undefined ? "" : String(rawValue);
+        const value = rawValue === null || rawValue === undefined ? "" : 
+          typeof rawValue === 'string' ? rawValue : 
+          typeof rawValue === 'number' ? rawValue.toString() :
+          typeof rawValue === 'boolean' ? rawValue.toString() :
+          JSON.stringify(rawValue);
         return Math.max(widths[i], value.length);
       });
     }, initialWidths);
@@ -147,7 +151,11 @@ class Table {
     for (const row of this.rows) {
       const values = this.columns.map((col) => {
         const rawValue = row[col.key];
-        const value = rawValue === null || rawValue === undefined ? "" : String(rawValue);
+        const value = rawValue === null || rawValue === undefined ? "" : 
+          typeof rawValue === 'string' ? rawValue : 
+          typeof rawValue === 'number' ? rawValue.toString() :
+          typeof rawValue === 'boolean' ? rawValue.toString() :
+          JSON.stringify(rawValue);
         return `${col.header}: ${value}`;
       });
       logger.log(`  ${values.join(", ")}`);

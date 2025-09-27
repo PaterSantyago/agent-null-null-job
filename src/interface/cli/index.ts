@@ -28,7 +28,12 @@ class InstanceManager {
 
   static getInstance(): InstanceManager {
     if (!InstanceManager.instance) {
-      (InstanceManager as any).instance = new InstanceManager();
+      Object.defineProperty(InstanceManager, 'instance', {
+        value: new InstanceManager(),
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
     }
     return InstanceManager.instance!;
   }
