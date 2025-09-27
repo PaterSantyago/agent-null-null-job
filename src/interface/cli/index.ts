@@ -14,7 +14,7 @@ import { createOpenAIService } from "@/infrastructure/adapters/llm/openai-servic
 import { createSqliteStorageService } from "@/infrastructure/adapters/storage/sqlite-storage.js";
 import { createTelegramService } from "@/infrastructure/adapters/telegram/telegram-service.js";
 
-import { logger, printTable } from "./ui/index.js";
+import { logger } from "./ui/index.js";
 
 // Singleton instance management
 const LOCK_FILE = resolve(process.cwd(), ".agent-null-null-job.lock");
@@ -28,14 +28,14 @@ class InstanceManager {
 
   static getInstance(): InstanceManager {
     if (!InstanceManager.instance) {
-      Object.defineProperty(InstanceManager, 'instance', {
+      Object.defineProperty(InstanceManager, "instance", {
         value: new InstanceManager(),
         writable: true,
         enumerable: true,
-        configurable: true
+        configurable: true,
       });
     }
-    return InstanceManager.instance!;
+    return InstanceManager.instance as InstanceManager;
   }
 
   async acquireLock(): Promise<boolean> {
@@ -46,7 +46,11 @@ class InstanceManager {
     // Check if lock file exists and if the process is still running
     if (existsSync(LOCK_FILE)) {
       try {
-        const lockData = JSON.parse(readFileSync(LOCK_FILE, "utf8"));
+        const lockData = JSON.parse(readFileSync(LOCK_FILE, "utf8")) as {
+          pid?: number;
+          timestamp?: number;
+          command?: string;
+        };
         const pid = lockData.pid ?? 0;
         if (pid > 0 && this.isProcessRunning(pid)) {
           return false; // Another instance is running
@@ -111,11 +115,15 @@ class InstanceManager {
     }
 
     try {
-      const lockData = JSON.parse(readFileSync(LOCK_FILE, "utf8"));
-      return lockData as {
-        readonly pid: number;
-        readonly timestamp: number;
-        readonly command: string;
+      const lockData = JSON.parse(readFileSync(LOCK_FILE, "utf8")) as {
+        pid?: number;
+        timestamp?: number;
+        command?: string;
+      };
+      return {
+        pid: lockData.pid ?? 0,
+        timestamp: lockData.timestamp ?? 0,
+        command: lockData.command ?? "",
       };
     } catch {
       return null;
@@ -135,7 +143,7 @@ process.on("SIGINT", cleanup);
 process.on("SIGTERM", cleanup);
 process.on("exit", cleanup);
 process.on("uncaughtException", (error) => {
-  logger.error(`Uncaught Exception: ${error.message || error}`);
+  logger.error(`Uncaught Exception: ${error.message ?? String(error)}`);
   cleanup();
   process.exit(1);
 });
@@ -151,10 +159,11 @@ const program = new Command();
 program
   .name("0x00004a")
   .description("Agent: NullNullJob - LinkedIn Job Discovery CLI with Clean Architecture")
-  .version("1.0.0");
-
-// Configure commander to exit with error code for unknown commands
-program.exitOverride();
+  .version("1.0.0")
+  .option("-c, --criteria <id>", "Criteria ID to use", "default")
+  .option("-d, --dry-run", "Run without making changes")
+  .option("-f, --force", "Force re-authentication")
+  .option("--purge", "Purge all data before running");
 
 // Helper function to check and acquire lock
 const checkAndAcquireLock = async (): Promise<boolean> => {
@@ -176,349 +185,97 @@ const checkAndAcquireLock = async (): Promise<boolean> => {
   return true;
 };
 
-// Agent: NullNullJob Commands
-program
-  .command("auth")
-  .description("Authenticate with LinkedIn")
-  .option("-f, --force", "Force re-authentication")
-  .action(async (options) => {
-    await checkAndAcquireLock();
+// Main execution function
+const runAgent = async (options: {
+  criteria: string;
+  dryRun: boolean;
+  force: boolean;
+  purge: boolean;
+}) => {
+  await checkAndAcquireLock();
 
-    intro(" LinkedIn Authentication ");
+  intro(" Agent: NullNullJob ");
 
-    const s = spinner();
-    s.start("Loading configuration...");
+  const s = spinner();
+  s.start("Loading configuration...");
 
-    const configEffect = loadConfig();
-    const config = await Effect.runPromise(configEffect).catch((error) => {
-      s.stop();
-      outro(`Configuration error: ${error.message}`);
-      instanceManager.releaseLock();
-      process.exit(10);
-    });
-
-    const scraper = createLinkedInScraper();
-    const storage = createSqliteStorageService(
-      config.storage.dataDir,
-      config.storage.encryptionKey,
-    );
-    const nullNullJob = createNullNullJobService(
-      config,
-      scraper,
-      createOpenAIService(config.llm.apiKey),
-      storage,
-      createTelegramService(config.telegram.botToken, config.telegram.chatId),
-    );
-
-    s.message("Authenticating with LinkedIn...");
-
-    const authEffect = nullNullJob.authenticate(options.force);
-    await Effect.runPromise(authEffect).then(
-      (session) => {
-        s.stop();
-        outro(`Authentication successful! Session expires at ${session.expiresAt.toISOString()}`);
-      },
-      (error) => {
-        s.stop();
-        outro(`Authentication failed: ${error.message}`);
-        instanceManager.releaseLock();
-        process.exit(10);
-      },
-    );
+  const configEffect = loadConfig();
+  const config = await Effect.runPromise(configEffect).catch((error: Error) => {
+    s.stop();
+    outro(`Configuration error: ${error.message}`);
+    instanceManager.releaseLock();
+    process.exit(10);
   });
 
-program
-  .command("run")
-  .description("Run job discovery pipeline")
-  .option("-c, --criteria <id>", "Criteria ID to use", "default")
-  .option("-d, --dry-run", "Run without making changes")
-  .action(async (options) => {
-    await checkAndAcquireLock();
+  const criteria = config.criteria.find((c) => c.id === options.criteria);
+  if (!criteria) {
+    s.stop();
+    outro(`Criteria '${options.criteria}' not found`);
+    instanceManager.releaseLock();
+    process.exit(1);
+  }
 
-    intro(" Agent: NullNullJob ");
+  const scraper = createLinkedInScraper();
+  const storage = createSqliteStorageService(config.storage.dataDir, config.storage.encryptionKey);
+  const nullNullJob = createNullNullJobService(
+    config,
+    scraper,
+    createOpenAIService(config.llm.apiKey),
+    storage,
+    createTelegramService(config.telegram.botToken, config.telegram.chatId),
+  );
 
-    const s = spinner();
-    s.start("Loading configuration...");
-
-    const configEffect = loadConfig();
-    const config = await Effect.runPromise(configEffect).catch((error) => {
+  // Handle purge option
+  if (options.purge) {
+    s.message("Purging all data...");
+    const purgeEffect = nullNullJob.purgeCache("all");
+    await Effect.runPromise(purgeEffect).catch((error: Error) => {
       s.stop();
-      outro(`Configuration error: ${error.message}`);
-      instanceManager.releaseLock();
-      process.exit(10);
-    });
-
-    const criteria = config.criteria.find((c) => c.id === options.criteria);
-    if (!criteria) {
-      s.stop();
-      outro(`Criteria '${options.criteria}' not found`);
+      outro(`Failed to purge data: ${error.message}`);
       instanceManager.releaseLock();
       process.exit(1);
-    }
+    });
+  }
 
-    const scraper = createLinkedInScraper();
-    const storage = createSqliteStorageService(
-      config.storage.dataDir,
-      config.storage.encryptionKey,
-    );
-    const nullNullJob = createNullNullJobService(
-      config,
-      scraper,
-      createOpenAIService(config.llm.apiKey),
-      storage,
-      createTelegramService(config.telegram.botToken, config.telegram.chatId),
-    );
-
-    s.message("Running job discovery...");
-
-    const runEffect = nullNullJob.runJobDiscovery(criteria, options.dryRun);
-    await Effect.runPromise(runEffect).then(
-      (run) => {
-        s.stop();
-        outro(
-          `Job discovery completed! Found ${run.jobsFound} jobs, processed ${run.jobsProcessed}, scored ${run.jobsScored}`,
-        );
-      },
-      (error) => {
-        s.stop();
-        outro(`Job discovery failed: ${error.message}`);
-        instanceManager.releaseLock();
-        process.exit(1);
-      },
-    );
+  // Authenticate if needed
+  s.message("Checking authentication...");
+  const authEffect = nullNullJob.authenticate(options.force);
+  await Effect.runPromise(authEffect).catch((error: Error) => {
+    s.stop();
+    outro(`Authentication failed: ${error.message}`);
+    instanceManager.releaseLock();
+    process.exit(10);
   });
 
-program
-  .command("score")
-  .description("Re-score existing jobs")
-  .option("-c, --criteria <id>", "Criteria ID to use", "default")
-  .action(async (options) => {
-    await checkAndAcquireLock();
-
-    intro(" Re-scoring Jobs ");
-
-    const s = spinner();
-    s.start("Loading configuration...");
-
-    const configEffect = loadConfig();
-    const config = await Effect.runPromise(configEffect).catch((error) => {
+  // Run job discovery
+  s.message("Running job discovery...");
+  const runEffect = nullNullJob.runJobDiscovery(criteria, options.dryRun);
+  await Effect.runPromise(runEffect).then(
+    (run) => {
       s.stop();
-      outro(`Configuration error: ${error.message}`);
-      instanceManager.releaseLock();
-      process.exit(10);
-    });
-
-    const criteria = config.criteria.find((c) => c.id === options.criteria);
-    if (!criteria) {
+      outro(
+        `Job discovery completed! Found ${run.jobsFound} jobs, processed ${run.jobsProcessed}, scored ${run.jobsScored}`,
+      );
+    },
+    (error: Error) => {
       s.stop();
-      outro(`Criteria '${options.criteria}' not found`);
+      outro(`Job discovery failed: ${error.message}`);
       instanceManager.releaseLock();
       process.exit(1);
-    }
-
-    const scraper = createLinkedInScraper();
-    const storage = createSqliteStorageService(
-      config.storage.dataDir,
-      config.storage.encryptionKey,
-    );
-    const nullNullJob = createNullNullJobService(
-      config,
-      scraper,
-      createOpenAIService(config.llm.apiKey),
-      storage,
-      createTelegramService(config.telegram.botToken, config.telegram.chatId),
-    );
-
-    s.message("Re-scoring jobs...");
-
-    const scoreEffect = nullNullJob.scoreExistingJobs(criteria);
-    await Effect.runPromise(scoreEffect).then(
-      (jobs) => {
-        s.stop();
-        const highScoreJobs = jobs.filter((job) => (job.score ?? 0) >= 70);
-        outro(`Re-scored ${jobs.length} jobs, ${highScoreJobs.length} high-score jobs`);
-      },
-      (error) => {
-        s.stop();
-        outro(`Re-scoring failed: ${error.message}`);
-        instanceManager.releaseLock();
-        process.exit(1);
-      },
-    );
-  });
-
-program
-  .command("send")
-  .description("Send last results via Telegram")
-  .option("-c, --criteria <id>", "Criteria ID to use", "default")
-  .action(async (options) => {
-    await checkAndAcquireLock();
-
-    intro(" Sending Results ");
-
-    const s = spinner();
-    s.start("Loading configuration...");
-
-    const configEffect = loadConfig();
-    const config = await Effect.runPromise(configEffect).catch((error) => {
-      s.stop();
-      outro(`Configuration error: ${error.message}`);
-      instanceManager.releaseLock();
-      process.exit(10);
-    });
-
-    const criteria = config.criteria.find((c) => c.id === options.criteria);
-    if (!criteria) {
-      s.stop();
-      outro(`Criteria '${options.criteria}' not found`);
-      instanceManager.releaseLock();
-      process.exit(1);
-    }
-
-    const scraper = createLinkedInScraper();
-    const storage = createSqliteStorageService(
-      config.storage.dataDir,
-      config.storage.encryptionKey,
-    );
-    const nullNullJob = createNullNullJobService(
-      config,
-      scraper,
-      createOpenAIService(config.llm.apiKey),
-      storage,
-      createTelegramService(config.telegram.botToken, config.telegram.chatId),
-    );
-
-    s.message("Sending results...");
-
-    const sendEffect = nullNullJob.sendLastResults(criteria);
-    await Effect.runPromise(sendEffect).then(
-      () => {
-        s.stop();
-        outro("Results sent successfully!");
-      },
-      (error) => {
-        s.stop();
-        outro(`Failed to send results: ${error.message}`);
-        instanceManager.releaseLock();
-        process.exit(1);
-      },
-    );
-  });
-
-program
-  .command("status")
-  .description("Show agent status")
-  .action(async () => {
-    await checkAndAcquireLock();
-
-    intro(" Agent: NullNullJob Status ");
-
-    const s = spinner();
-    s.start("Loading status...");
-
-    const configEffect = loadConfig();
-    const config = await Effect.runPromise(configEffect).catch((error) => {
-      s.stop();
-      outro(`Configuration error: ${error.message}`);
-      instanceManager.releaseLock();
-      process.exit(10);
-    });
-
-    const scraper = createLinkedInScraper();
-    const storage = createSqliteStorageService(
-      config.storage.dataDir,
-      config.storage.encryptionKey,
-    );
-    const nullNullJob = createNullNullJobService(
-      config,
-      scraper,
-      createOpenAIService(config.llm.apiKey),
-      storage,
-      createTelegramService(config.telegram.botToken, config.telegram.chatId),
-    );
-
-    const statusEffect = nullNullJob.getStatus();
-    await Effect.runPromise(statusEffect).then(
-      (status) => {
-        s.stop();
-
-        // Display status using table
-        const statusData = [
-          {
-            Property: "Session Status",
-            Value: status.sessionValid ? "Valid" : "Invalid",
-            Status: status.sessionValid ? "✓" : "✗",
-          },
-          {
-            Property: "Total Jobs",
-            Value: status.totalJobs.toString(),
-            Status: "",
-          },
-          {
-            Property: "High-Score Jobs",
-            Value: status.highScoreJobs.toString(),
-            Status: "",
-          },
-        ];
-
-        const lastRunData = status.lastRun
-          ? [
-              {
-                Property: "Last Run",
-                Value: status.lastRun.completedAt?.toISOString() ?? "Running",
-                Status: status.lastRun.completedAt ? "✓" : "○",
-              },
-              {
-                Property: "Jobs Found",
-                Value: status.lastRun.jobsFound.toString(),
-                Status: "",
-              },
-              {
-                Property: "Jobs Processed",
-                Value: status.lastRun.jobsProcessed.toString(),
-                Status: "",
-              },
-              {
-                Property: "Jobs Scored",
-                Value: status.lastRun.jobsScored.toString(),
-                Status: "",
-              },
-            ]
-          : [];
-
-        const allStatusData = [...statusData, ...lastRunData];
-
-        printTable()
-          .setColumns([
-            { key: "Property", header: "Property", width: 20 },
-            { key: "Value", header: "Value", width: 30 },
-            { key: "Status", header: "Status", width: 8, align: "center" },
-          ])
-          .addRows(allStatusData)
-          .render();
-
-        outro("Agent status loaded successfully!");
-      },
-      (error) => {
-        s.stop();
-        outro(`Failed to load status: ${error.message}`);
-        instanceManager.releaseLock();
-        process.exit(1);
-      },
-    );
-  });
+    },
+  );
+};
 
 program
   .command("purge")
-  .description("Purge cache or all data")
-  .option("-t, --type <type>", "Type to purge: cache or all", "cache")
-  .action(async (options) => {
+  .description("Purge all data")
+  .action(async () => {
     await checkAndAcquireLock();
 
-    intro(" Purge Data ");
+    intro(" Purge All Data ");
 
     const confirmed = await confirm({
-      message: `Are you sure you want to purge ${options.type}?`,
+      message: "Are you sure you want to purge all data?",
     });
 
     if (isCancel(confirmed) || !confirmed) {
@@ -528,10 +285,10 @@ program
     }
 
     const s = spinner();
-    s.start("Purging data...");
+    s.start("Purging all data...");
 
     const configEffect = loadConfig();
-    const config = await Effect.runPromise(configEffect).catch((error) => {
+    const config = await Effect.runPromise(configEffect).catch((error: Error) => {
       s.stop();
       outro(`Configuration error: ${error.message}`);
       instanceManager.releaseLock();
@@ -551,13 +308,13 @@ program
       createTelegramService(config.telegram.botToken, config.telegram.chatId),
     );
 
-    const purgeEffect = nullNullJob.purgeCache(options.type as "cache" | "all");
+    const purgeEffect = nullNullJob.purgeCache("all");
     await Effect.runPromise(purgeEffect).then(
       () => {
         s.stop();
-        outro(`${options.type} purged successfully!`);
+        outro("All data purged successfully!");
       },
-      (error) => {
+      (error: Error) => {
         s.stop();
         outro(`Failed to purge: ${error.message}`);
         instanceManager.releaseLock();
@@ -569,12 +326,29 @@ program
 // Parse command line arguments
 try {
   program.parse();
-} catch (error: any) {
-  if (error.code === "commander.unknownCommand") {
-    logger.error(`Unknown command: ${error.message}`);
+
+  // If no command was provided, run the main agent
+  if (program.args.length === 0) {
+    const options = program.opts();
+    await runAgent({
+      criteria: options["criteria"] ?? "default",
+      dryRun: options["dryRun"] ?? false,
+      force: options["force"] ?? false,
+      purge: options["purge"] ?? false,
+    });
+  }
+} catch (error: unknown) {
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    error.code === "commander.unknownCommand"
+  ) {
+    const errorWithMessage = error as { message?: string };
+    logger.error(`Unknown command: ${errorWithMessage.message ?? "Unknown error"}`);
     process.exit(1);
   } else {
-    logger.error(`Error: ${error.message}`);
+    logger.error(`Error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
 }
