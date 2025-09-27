@@ -163,7 +163,15 @@ program
   .option("-c, --criteria <id>", "Criteria ID to use", "default")
   .option("-d, --dry-run", "Run without making changes")
   .option("-f, --force", "Force re-authentication")
-  .option("--purge", "Purge all data before running");
+  .option("--purge", "Purge all data before running")
+  .action(async (options) => {
+    await runAgent({
+      criteria: options["criteria"] ?? "default",
+      dryRun: options["dryRun"] ?? false,
+      force: options["force"] ?? false,
+      purge: options["purge"] ?? false,
+    });
+  });
 
 // Helper function to check and acquire lock
 const checkAndAcquireLock = async (): Promise<boolean> => {
@@ -326,17 +334,6 @@ program
 // Parse command line arguments
 try {
   program.parse();
-
-  // If no command was provided, run the main agent
-  if (program.args.length === 0) {
-    const options = program.opts();
-    await runAgent({
-      criteria: options["criteria"] ?? "default",
-      dryRun: options["dryRun"] ?? false,
-      force: options["force"] ?? false,
-      purge: options["purge"] ?? false,
-    });
-  }
 } catch (error: unknown) {
   if (
     error &&
