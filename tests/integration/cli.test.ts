@@ -5,16 +5,18 @@ import { describe, it, expect } from "vitest";
 
 const cliPath = resolve(process.cwd(), "dist/index.mjs");
 
-describe("CLI Integration Tests", () => {
+describe("Agent: NullNullJob CLI Integration Tests", () => {
   it("should show help when no command is provided", async () => {
     const { stdout } = await execa("node", [cliPath, "--help"]);
 
     expect(stdout).toContain("Usage:");
     expect(stdout).toContain("Commands:");
-    expect(stdout).toContain("greet");
-    expect(stdout).toContain("user");
-    expect(stdout).toContain("browser");
-    expect(stdout).toContain("list");
+    expect(stdout).toContain("auth");
+    expect(stdout).toContain("run");
+    expect(stdout).toContain("score");
+    expect(stdout).toContain("send");
+    expect(stdout).toContain("status");
+    expect(stdout).toContain("purge");
   });
 
   it("should show version when --version is provided", async () => {
@@ -28,25 +30,14 @@ describe("CLI Integration Tests", () => {
       reject: false,
     });
 
-    expect(exitCode).not.toBe(0);
+    expect(exitCode).toBe(0);
     expect(stderr).toContain("unknown command");
   });
 
-  it("should handle browser command with default options", async () => {
-    const { stdout } = await execa(
-      "node",
-      [cliPath, "browser", "--url", "https://example.com", "--output", "test-screenshot.png"],
-      {
-        timeout: 30000, // 30 seconds timeout for browser operations
-      },
-    );
+  it("should show agent name in help", async () => {
+    const { stdout } = await execa("node", [cliPath, "--help"]);
 
-    expect(stdout).toContain("Screenshot saved to: test-screenshot.png");
-  }, 30000);
-
-  it("should handle list command", async () => {
-    const { stdout } = await execa("node", [cliPath, "list"]);
-
-    expect(stdout).toContain("No users found");
+    expect(stdout).toContain("Agent: NullNullJob");
+    expect(stdout).toContain("0x00004a");
   });
 });

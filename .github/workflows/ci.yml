@@ -54,19 +54,19 @@ jobs:
       - name: Format check
         run: pnpm fmt:check
 
-      - name: Run tests
-        run: pnpm test:run
+      - name: Run unit tests
+        run: pnpm test:unit:run
 
-      - name: Run tests with coverage
-        run: pnpm test:coverage
+      - name: Run unit tests with coverage
+        run: pnpm test:unit:coverage
 
       - name: Build
         run: pnpm build
 
-      - name: Upload coverage to Codecov
+      - name: Upload unit test coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage/lcov.info
           flags: unittests
-          name: codecov-umbrella
+          name: codecov-unit-tests
           fail_ci_if_error: false

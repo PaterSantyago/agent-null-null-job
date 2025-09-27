@@ -1,11 +1,16 @@
-# Your CLI
+# Agent: NullNullJob
 
-A TypeScript CLI project with Clean Architecture, functional programming principles, and comprehensive tooling.
+A TypeScript CLI that automates LinkedIn job discovery and delivery using Clean Architecture, functional programming principles, and AI-powered job matching.
 
 ## 🚀 Features
 
+- **LinkedIn Job Scraping**: Automated job discovery with headful browser authentication
+- **AI-Powered Processing**: LLM-based job data extraction and relevance scoring
+- **Smart Filtering**: De-duplication, freshness checks, and configurable criteria
+- **Telegram Integration**: Automated job alerts and digest notifications
+- **Secure Storage**: Encrypted session management and job data persistence
 - **Clean Architecture**: Domain, Application, Infrastructure, and Interface layers
-- **Functional Programming**: Using fp-ts for functional programming patterns
+- **Functional Programming**: Using Effect for functional programming patterns
 - **TypeScript 5.9**: Latest TypeScript with strict configuration
 - **ESM Support**: Native ES modules with proper configuration
 - **CLI Interface**: Interactive CLI with commander, clack prompts, and chalk
@@ -18,6 +23,9 @@ A TypeScript CLI project with Clean Architecture, functional programming princip
 
 - Node.js v20+
 - pnpm v9+ (required - other package managers are not supported)
+- OpenAI API key
+- Telegram Bot Token and Chat ID
+- LinkedIn account
 
 ## 🛠️ Installation
 
@@ -54,51 +62,101 @@ pnpm dev
 
 ### Available Commands
 
-#### Interactive Greeting
+#### Agent: NullNullJob Commands
 
 ```bash
+# Authenticate with LinkedIn
+pnpm dev auth
+
+# Run job discovery pipeline
+pnpm dev run
+
+# Re-score existing jobs
+pnpm dev score
+
+# Send last results via Telegram
+pnpm dev send
+
+# Show agent status
+pnpm dev status
+
+# Purge cache or all data
+pnpm dev purge --type cache
+```
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```bash
+# Required
+OPENAI_API_KEY=your_openai_api_key
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHAT_ID=your_telegram_chat_id
+
+# Optional
+ENCRYPTION_KEY=your_encryption_key_for_secure_storage
+```
+
+### Configuration File
+
+The `config.json` file allows you to customize job search criteria and behavior:
+
+```json
+{
+  "criteria": [
+    {
+      "id": "typescript-remote",
+      "keywords": ["typescript", "node.js", "react"],
+      "location": "Remote",
+      "remotePolicy": "REMOTE",
+      "seniority": "SENIOR",
+      "employmentType": "FULL_TIME",
+      "enabled": true
+    }
+  ],
+  "scoring": {
+    "minScore": 60,
+    "cvPath": "./cv.txt"
+  }
+}
+```
+
+### CV File
+
+Create a `cv.txt` file with your professional summary for AI-powered job matching.
+
+#### Legacy Commands
+
+```bash
+# Interactive greeting
 pnpm dev greet
-```
 
-Interactive command that asks for your name and greets you.
-
-#### User Management
-
-```bash
+# User management
 pnpm dev user
-```
 
-Interactive user creation with email validation.
-
-#### Browser Automation
-
-```bash
+# Browser automation
 pnpm dev browser --url https://example.com --output screenshot.png
-```
 
-Opens a browser, navigates to a URL, and takes a screenshot.
-
-#### List Users
-
-```bash
+# List users
 pnpm dev list
 ```
-
-Lists all created users.
 
 ### Production
 
 After building, you can run the CLI directly:
 
 ```bash
-pnpm exec your-cli --help
+pnpm exec 0x00004a --help
 ```
 
 Or install globally:
 
 ```bash
 pnpm install -g .
-your-cli --help
+0x00004a --help
 ```
 
 ## 🏗️ Project Structure

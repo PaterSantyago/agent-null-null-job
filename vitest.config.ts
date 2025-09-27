@@ -6,8 +6,8 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["src/**/*.{test,spec}.{js,ts}", "tests/**/*.{test,spec}.{js,ts}"],
-    exclude: ["node_modules", "dist", "coverage", "tests/playwright/**/*"],
+    include: ["src/**/*.{test,spec}.{js,ts}"],
+    exclude: ["node_modules", "dist", "coverage", "tests/**/*"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],

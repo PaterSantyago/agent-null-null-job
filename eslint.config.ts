@@ -119,6 +119,28 @@ export default [
       "@typescript-eslint/no-var-requires": "off",
     },
   },
+  {
+    files: ["**/*.test.{js,ts}", "**/*.spec.{js,ts}"],
+    rules: {
+      // Allow any in tests for mocking
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      // Allow console in tests
+      "no-console": "off",
+      // Allow unbound methods in tests
+      "@typescript-eslint/unbound-method": "off",
+      // Allow functional programming violations in tests
+      "functional/no-let": "off",
+      "functional/immutable-data": "off",
+      "functional/prefer-readonly-type": "off",
+      // Allow modifying objects in tests
+      "functional/no-method-signature": "off",
+    },
+  },
   prettier,
   {
     ignores: [

@@ -31,3 +31,7 @@ Thumbs.db
 
 # Package manager files (keep pnpm-lock.yaml)
 package-lock.json
+
+# Agent: NullNullJob lock files
+.agent-null-null-job.lock
+.agent-null-null-job.pid

@@ -1,0 +1,28 @@
+{
+  "criteria": [
+    {
+      "id": "test",
+      "keywords": ["typescript", "node.js"],
+      "location": "Remote",
+      "filters": {
+        "seniority": ["senior", "lead"],
+        "employmentType": ["full-time"],
+        "remotePolicy": ["remote", "hybrid"]
+      }
+    }
+  ],
+  "llm": {
+    "provider": "openai",
+    "apiKey": "test-key",
+    "model": "gpt-4o-mini",
+    "maxTokens": 4000
+  },
+  "telegram": {
+    "botToken": "test-token",
+    "chatId": "test-chat"
+  },
+  "storage": {
+    "dataDir": "./data",
+    "encryptionKey": "test-encryption-key-32-chars-long"
+  }
+}
